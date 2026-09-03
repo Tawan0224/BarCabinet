@@ -76,10 +76,20 @@ struct DrinkSummary: Identifiable, Hashable, Decodable {
         case thumbnailURL = "strDrinkThumb"
     }
 
+    init(id: String, name: String, thumbnailURL: URL?) {
+        self.id = id
+        self.name = name
+        self.thumbnailURL = thumbnailURL
+    }
+
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         self.id = try c.decode(String.self, forKey: .id)
         self.name = try c.decode(String.self, forKey: .name)
         self.thumbnailURL = (try c.decodeIfPresent(String.self, forKey: .thumbnailURL)).flatMap(URL.init(string:))
+    }
+
+    init(_ drink: Drink) {
+        self.init(id: drink.id, name: drink.name, thumbnailURL: drink.thumbnailURL)
     }
 }

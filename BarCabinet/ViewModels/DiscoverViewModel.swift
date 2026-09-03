@@ -18,9 +18,21 @@ final class DiscoverViewModel {
     var errorMessage: String?
 
     private let api: CocktailAPI
+    private let now: () -> Date
+    private let popularCount = 6
 
-    init(api: CocktailAPI = .shared) {
+    init(api: CocktailAPI = .shared, now: @escaping () -> Date = Date.init) {
         self.api = api
+        self.now = now
+    }
+
+    var greeting: String {
+        switch Calendar.current.component(.hour, from: now()) {
+        case 5..<12: return "Good morning"
+        case 12..<17: return "Good afternoon"
+        case 17..<22: return "Good evening"
+        default: return "Good night"
+        }
     }
 
     func load() async {
@@ -28,7 +40,8 @@ final class DiscoverViewModel {
         errorMessage = nil
         defer { isLoading = false }
         do {
-            drinks = try await fetch()
+            let all = try await fetch()
+            drinks = Array(all.shuffled().prefix(popularCount))
         } catch {
             drinks = []
             errorMessage = "Couldn't load drinks. Check your connection and try again."

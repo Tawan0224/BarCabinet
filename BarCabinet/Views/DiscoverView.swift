@@ -27,14 +27,12 @@ struct DiscoverView: View {
                 }
                 .padding(.vertical)
             }
-            .navigationTitle("Cocktail Craft")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                    } label: {
-                        Image(systemName: "shuffle")
-                    }
-                }
+            .navigationTitle("Bar Cabinet")
+            .navigationDestination(for: DrinkSummary.self) { drink in
+                MixGuideView(drinkID: drink.id)
+            }
+            .refreshable {
+                await viewModel.load()
             }
             .task(id: viewModel.filter) {
                 await viewModel.load()
@@ -68,7 +66,10 @@ struct DiscoverView: View {
         } else {
             LazyVGrid(columns: columns, spacing: 12) {
                 ForEach(viewModel.drinks) { drink in
-                    DrinkCard(drink: drink)
+                    NavigationLink(value: drink) {
+                        DrinkCard(drink: drink)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal)
@@ -77,7 +78,7 @@ struct DiscoverView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Good evening")
+            Text(viewModel.greeting)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             Text("What will you mix today?")
@@ -109,39 +110,6 @@ struct DiscoverView: View {
                 }
             }
             .padding(.horizontal)
-        }
-    }
-}
-
-private struct DrinkCard: View {
-    let drink: DrinkSummary
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            AsyncImage(url: drink.thumbnailURL) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                case .failure:
-                    Image(systemName: "wineglass")
-                        .font(.largeTitle)
-                        .foregroundStyle(.tertiary)
-                case .empty:
-                    ProgressView()
-                @unknown default:
-                    Color.clear
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .aspectRatio(1, contentMode: .fit)
-            .background(Color(.secondarySystemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-
-            Text(drink.name)
-                .font(.subheadline.weight(.medium))
-                .lineLimit(1)
         }
     }
 }
