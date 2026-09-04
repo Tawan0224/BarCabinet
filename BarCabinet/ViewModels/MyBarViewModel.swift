@@ -2,7 +2,7 @@ import Foundation
 import Observation
 
 enum MyBarSection: String, CaseIterable, Identifiable {
-    case cabinet = "My Bar"
+    case ingredients = "Ingredients"
     case favorites = "Favorites"
     var id: String { rawValue }
 }
@@ -10,9 +10,5 @@ enum MyBarSection: String, CaseIterable, Identifiable {
 @MainActor
 @Observable
 final class MyBarViewModel {
-    var section: MyBarSection = .cabinet
-    var ingredients: [String] = []
-    var favorites: [DrinkSummary] = []
-
-    var madeCount: Int { 0 }
+    var section: MyBarSection = .ingredients
 }

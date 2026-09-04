@@ -8,7 +8,6 @@ final class MixGuideViewModel {
     var drink: Drink?
     var isLoading = false
     var errorMessage: String?
-    var isFavorite = false
 
     private let api: CocktailAPI
 
@@ -22,14 +21,14 @@ final class MixGuideViewModel {
         errorMessage = nil
         defer { isLoading = false }
         do {
-            drink = try await api.drink(withID: drinkID)
+            if let result = try await api.drink(withID: drinkID) {
+                drink = result
+            } else {
+                errorMessage = "This drink couldn't be found."
+            }
         } catch {
-            errorMessage = "Couldn't load this drink."
+            errorMessage = "Couldn't load this drink. Check your connection and try again."
         }
-    }
-
-    func toggleFavorite() {
-        isFavorite.toggle()
     }
 
     // TheCocktailDB returns instructions as one paragraph with period-separated sentences.

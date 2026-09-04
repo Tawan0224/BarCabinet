@@ -6,12 +6,11 @@ enum CocktailAPIError: Error {
     case transport(Error)
 }
 
-actor CocktailAPI {
+struct CocktailAPI: Sendable {
     static let shared = CocktailAPI()
 
     private let base = URL(string: "https://www.thecocktaildb.com/api/json/v1/1/")!
     private let session: URLSession
-    private let decoder = JSONDecoder()
 
     init(session: URLSession = .shared) {
         self.session = session
@@ -52,12 +51,28 @@ actor CocktailAPI {
         return env.drinks?.first
     }
 
+    /// Full drinks whose names start with a letter/digit. Returns full ingredients.
+    func drinks(startingWith letter: String) async throws -> [Drink] {
+        let env: Envelope<Drink> = try await get("search.php", query: [.init(name: "f", value: letter)])
+        return env.drinks ?? []
+    }
+
+    func listIngredients() async throws -> [String] {
+        struct Row: Decodable { let strIngredient1: String }
+        let env: Envelope<Row> = try await get("list.php", query: [.init(name: "i", value: "list")])
+        return (env.drinks ?? [])
+            .map(\.strIngredient1)
+            .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+    }
+
     private func get<T: Decodable>(_ path: String, query: [URLQueryItem]) async throws -> T {
         let url = base.appendingPathComponent(path).appending(queryItems: query)
+        var request = URLRequest(url: url)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
         let data: Data
         let response: URLResponse
         do {
-            (data, response) = try await session.data(from: url)
+            (data, response) = try await session.data(for: request)
         } catch {
             throw CocktailAPIError.transport(error)
         }
@@ -65,7 +80,7 @@ actor CocktailAPI {
             throw CocktailAPIError.badResponse(http.statusCode)
         }
         do {
-            return try decoder.decode(T.self, from: data)
+            return try JSONDecoder().decode(T.self, from: data)
         } catch {
             throw CocktailAPIError.decoding(error)
         }

@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 @main
 struct BarCabinetApp: App {
@@ -6,5 +7,6 @@ struct BarCabinetApp: App {
         WindowGroup {
             ContentView()
         }
+        .modelContainer(for: [FavoriteDrink.self, CabinetIngredient.self])
     }
 }

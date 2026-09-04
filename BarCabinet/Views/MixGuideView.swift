@@ -1,31 +1,43 @@
 import SwiftUI
+import SwiftData
 
 struct MixGuideView: View {
     @State private var viewModel: MixGuideViewModel
+    @Environment(\.modelContext) private var modelContext
+    @Query private var favorites: [FavoriteDrink]
+    @Query private var cabinet: [CabinetIngredient]
 
     init(drinkID: String) {
         _viewModel = State(initialValue: MixGuideViewModel(drinkID: drinkID))
     }
 
+    private var isFavorite: Bool {
+        favorites.contains { $0.id == viewModel.drinkID }
+    }
+
+    private var cabinetSet: Set<String> {
+        Set(cabinet.map { $0.name.lowercased() })
+    }
+
     var body: some View {
         Group {
-            if viewModel.isLoading && viewModel.drink == nil {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let drink = viewModel.drink {
+            if let drink = viewModel.drink {
                 content(for: drink)
             } else if let errorMessage = viewModel.errorMessage {
                 errorState(errorMessage)
+            } else {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    viewModel.toggleFavorite()
+                    toggleFavorite()
                 } label: {
-                    Image(systemName: viewModel.isFavorite ? "heart.fill" : "heart")
-                        .foregroundStyle(viewModel.isFavorite ? .red : Color.primary)
+                    Image(systemName: isFavorite ? "heart.fill" : "heart")
+                        .foregroundStyle(isFavorite ? .red : Color.primary)
                 }
             }
         }
@@ -93,9 +105,10 @@ struct MixGuideView: View {
 
             VStack(spacing: 10) {
                 ForEach(drink.ingredients, id: \.self) { ingredient in
+                    let owned = cabinetSet.contains(ingredient.name.lowercased())
                     HStack(spacing: 12) {
-                        Image(systemName: "circle")
-                            .foregroundStyle(.secondary)
+                        Image(systemName: owned ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(owned ? Color.accentColor : .secondary)
                         Text(ingredient.name)
                         Spacer()
                         if let measure = ingredient.measure {
@@ -130,19 +143,18 @@ struct MixGuideView: View {
 
     private var addButton: some View {
         Button {
-            viewModel.toggleFavorite()
+            toggleFavorite()
         } label: {
             HStack(spacing: 8) {
-                Image(systemName: viewModel.isFavorite ? "bookmark.fill" : "bookmark")
-                Text(viewModel.isFavorite ? "Saved to My Bar" : "Add to My Bar")
+                Image(systemName: isFavorite ? "bookmark.fill" : "bookmark")
+                Text(isFavorite ? "Saved to Favorites" : "Save to Favorites")
                     .fontWeight(.semibold)
             }
             .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color.accentColor)
-            .foregroundStyle(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.vertical, 6)
         }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
         .padding(.horizontal)
     }
 
@@ -159,10 +171,25 @@ struct MixGuideView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
+
+    private func toggleFavorite() {
+        if let existing = favorites.first(where: { $0.id == viewModel.drinkID }) {
+            modelContext.delete(existing)
+            return
+        }
+        guard let drink = viewModel.drink else { return }
+        modelContext.insert(FavoriteDrink(
+            id: drink.id,
+            name: drink.name,
+            thumbnailURLString: drink.thumbnailURL?.absoluteString,
+            ingredientNames: drink.ingredients.map(\.name)
+        ))
+    }
 }
 
 #Preview {
     NavigationStack {
         MixGuideView(drinkID: "11007")
     }
+    .modelContainer(for: [FavoriteDrink.self, CabinetIngredient.self], inMemory: true)
 }
