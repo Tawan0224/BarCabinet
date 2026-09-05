@@ -72,7 +72,7 @@ struct MyBarView: View {
             List {
                 Section("My ingredients") {
                     if cabinet.isEmpty {
-                        Text("No ingredients yet — tap + to add one.")
+                        Text("No ingredients yet. Tap + to add one.")
                             .foregroundStyle(.secondary)
                             .font(.subheadline)
                     } else {
