@@ -14,6 +14,7 @@ enum DrinkTypeFilter: String, CaseIterable, Identifiable {
 final class DiscoverViewModel {
     var filter: DrinkTypeFilter = .all
     var drinks: [DrinkSummary] = []
+    var allDrinks: [DrinkSummary] = []
     var isLoading = false
     var errorMessage: String?
 
@@ -41,8 +42,10 @@ final class DiscoverViewModel {
         defer { isLoading = false }
         do {
             let all = try await fetch()
+            allDrinks = all.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
             drinks = Array(all.shuffled().prefix(popularCount))
         } catch {
+            allDrinks = []
             drinks = []
             errorMessage = "Couldn't load drinks. Check your connection and try again."
         }

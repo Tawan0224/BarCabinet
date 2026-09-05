@@ -8,6 +8,14 @@ struct DiscoverView: View {
         GridItem(.flexible(), spacing: 12)
     ]
 
+    private var seeAllTitle: String {
+        switch viewModel.filter {
+        case .all, .cocktail: "All cocktails"
+        case .mocktail: "All mocktails"
+        case .shake: "All shakes"
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -20,6 +28,14 @@ struct DiscoverView: View {
                         Text("Popular")
                             .font(.title2.bold())
                         Spacer()
+                        if !viewModel.allDrinks.isEmpty {
+                            NavigationLink {
+                                AllDrinksView(title: seeAllTitle, drinks: viewModel.allDrinks)
+                            } label: {
+                                Text("See all")
+                                    .font(.subheadline.weight(.medium))
+                            }
+                        }
                     }
                     .padding(.horizontal)
 
